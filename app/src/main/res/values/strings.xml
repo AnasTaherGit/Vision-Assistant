@@ -3,4 +3,5 @@
     <string name="titre">Visualy Impaired Persons Assistance</string>
     <string name="msg">Distance from Obstacle</string>
     <string name="Dist">No obstacles</string>
+    <string name="SenderText">Sender</string>
 </resources>

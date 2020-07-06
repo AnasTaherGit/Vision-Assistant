@@ -1,7 +1,5 @@
 package com.miniprojet.visionassitance;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -15,12 +13,13 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
     private static final Integer REQUEST_ENABLE_BT = 1;
@@ -59,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
                                 Log.e("Device","Could not close the client socket",closeException);
                             }
                         }
+                        BluetoothCommunicationHandler BCH= new BluetoothCommunicationHandler(mmSocket);
+                        BCH.start();
                     }
                     else {
                         if (State.equals("Connected") && Bluetooth.isEnabled()) {
@@ -74,8 +75,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             });
-            BluetoothCommunicationHandler BCH= new BluetoothCommunicationHandler(mmSocket);
-            BCH.start();
+
         }
 
         public void cancel(){
@@ -109,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
         private final BluetoothSocket mmsocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
+        Button Sender=(Button) findViewById(R.id.Sender);
         public BluetoothCommunicationHandler(BluetoothSocket socket){
             Log.d("Device","Communication Starting ...");
             mmsocket=socket;
@@ -124,28 +125,36 @@ public class MainActivity extends AppCompatActivity {
             mmInStream=tmpIn;
             Log.d("Device",String.valueOf(mmInStream));
             mmOutStream=tmpOut;
+            Sender.setOnClickListener(new View.OnClickListener(){
+                @Override
+                public void onClick(View v) {
+                    String mMsg="A feen a l3iwr\n";
+                    write(mMsg.getBytes());
+                }
+            });
+
         }
 
         public void run(){
             byte[] buffer=new byte[1024];
             int begin=0;
-            int bytes=0;
+            int bytes=-1;
             while (!mmsocket.isConnected()){}
             Log.d("Device","Socket Connected ! Communication engaged");
             while (mmsocket.isConnected()){
                 try {
                     //Log.d("Device","Input Stream Read");
-                    bytes+=mmInStream.read(buffer,bytes,buffer.length-bytes);
+                    bytes = mmInStream.read(buffer);
                     //Log.d("Device",String.valueOf(buffer));
                     //Log.d("Device","Input Steam read Complete");
-                    for (int i=begin;i<bytes;i++){
-                        mHandler.obtainMessage(1,begin,i,buffer).sendToTarget();
-                        begin=i+1;
-                        if(i==bytes-1){
-                            bytes=0;
-                            begin=0;
-                        }
-                    }
+                    //for (int i=begin;i<bytes;i++){
+                    mHandler.obtainMessage(1, bytes, -1, buffer).sendToTarget();
+                    //    begin=i+1;
+                    //    if(i==bytes-1){
+                    //        bytes=0;
+                    //        begin=0;
+                    //   }
+                    //}
                 } catch (IOException e){
                     break;
                 }
@@ -163,16 +172,26 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void handleMessage(Message msg){
             byte[] writeBuf=(byte[])msg.obj;
-            int begin=(int)msg.arg1;
-            int end=(int)msg.arg2;
+            int end=(int)msg.arg1;
             TextView Distance=(TextView)findViewById(R.id.Distance);
 
             switch (msg.what){
                 case 1:
-                    String writeMessage=new String(writeBuf);
-                    writeMessage=writeMessage.substring(begin,end);
-                    Log.d("Device",writeMessage);
-                    Distance.setText(writeMessage);
+                    String writeMessage=new String(writeBuf,0,end);
+                    if (writeMessage.startsWith("#")){
+                        Log.d("Device",writeMessage);
+                        Log.d("Device", String.valueOf((int)msg.arg1));
+                        Distance.setText(writeMessage.substring(1,end));
+                    }
+                    else {
+                        if (writeMessage.startsWith(">")) {
+                            Distance.setText("No Obstacles");
+                        } else {
+                            Log.d("Device", writeMessage);
+                            Log.d("Device", String.valueOf((int) msg.arg1));
+                            Distance.setText(writeMessage);
+                        }
+                    }
                     break;
             }
         }

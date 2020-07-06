@@ -64,4 +64,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/Titre" />
 
+    <Button
+        android:id="@+id/Sender"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="103dp"
+        android:text="@string/SenderText"
+        app:layout_constraintBottom_toTopOf="@+id/Msg"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/ConnectBT"
+        app:layout_constraintTop_toBottomOf="@+id/Titre" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
