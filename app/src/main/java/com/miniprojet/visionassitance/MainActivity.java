@@ -11,7 +11,9 @@ import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -39,9 +41,10 @@ public class MainActivity extends AppCompatActivity {
 
         public void run(){
             //Bluetooth.cancelDiscovery();
-            Button BluetoothConnect =(Button)findViewById(R.id.ConnectBT);
+            ImageButton BluetoothConnect = (ImageButton) findViewById(R.id.ConnectBT);
             Log.d("Device",mmDevice.getName());
             BluetoothConnect.setOnClickListener(new View.OnClickListener() {
+                @SuppressLint("ShowToast")
                 @Override
                 public void onClick(View v) {
                     if (State.equals("Not Connected") && Bluetooth.isEnabled()){
@@ -51,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             SetConnection();
                             mmSocket.connect();
+                            Toast.makeText(MainActivity.this,"Connected",Toast.LENGTH_SHORT).show();
                         }catch (IOException connectException){
                             try {
                                 mmSocket.close();
@@ -67,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("Device", State);
                             try {
                                 State="Not Connected";
+                                Toast.makeText(MainActivity.this,"Not Connected",Toast.LENGTH_SHORT).show();
                                 mmSocket.close();
                             }catch (IOException e){
                                 Log.e("Device","Could not close the client socket",e);
@@ -86,9 +91,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("Device","Could not close the client socket",e);
             }
         }
+        @SuppressLint("ShowToast")
         private void SetConnection(){
             BluetoothSocket tmp=null;
             try {
+                Toast.makeText(MainActivity.this,"Connection attempt",Toast.LENGTH_SHORT).show();
                 Log.d("Device","Connection Attempt");
                 String my_UUID = "00001101-0000-1000-8000-00805F9B34FB";
                 tmp=mmDevice.createRfcommSocketToServiceRecord(UUID.fromString(my_UUID));
@@ -211,6 +218,7 @@ public class MainActivity extends AppCompatActivity {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
         }
+        //while(!Bluetooth.isEnabled()){}
 
         Set<BluetoothDevice> pairedDevices = Bluetooth.getBondedDevices();
 
