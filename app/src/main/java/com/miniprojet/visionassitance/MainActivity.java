@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -20,6 +21,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -27,8 +31,10 @@ public class MainActivity extends AppCompatActivity {
     private static final Integer REQUEST_ENABLE_BT = 1;
     BluetoothAdapter Bluetooth;
     BluetoothDevice HC06;
+    TextToSpeech tts;
     String State="Not Connected";
-
+    Date date= new Date();
+    long StartDate=date.getTime()-1500;
 
     private class ConnectThread extends Thread{
         private  BluetoothSocket mmSocket;
@@ -181,7 +187,10 @@ public class MainActivity extends AppCompatActivity {
             byte[] writeBuf=(byte[])msg.obj;
             int end=(int)msg.arg1;
             TextView Distance=(TextView)findViewById(R.id.Distance);
-
+            date=new Date();
+            long CurrentDate=date.getTime();
+            long TIMEOUT=CurrentDate-StartDate;
+            //Log.d("TIMEOUT",String.valueOf(TIMEOUT));
             switch (msg.what){
                 case 1:
                     String writeMessage=new String(writeBuf,0,end);
@@ -189,6 +198,26 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("Device",writeMessage);
                         Log.d("Device", String.valueOf((int)msg.arg1));
                         Distance.setText(writeMessage.substring(1,end));
+                        if (!tts.isSpeaking() && TIMEOUT>=4000){
+                            Thread thread= new Thread(new Runnable() {
+                                String writeMessage;
+                                int end;
+                                @Override
+                                public void run() {
+                                    date = new Date();
+                                    StartDate = date.getTime();
+                                    //Log.d("Device",String.valueOf(StartDate));
+                                    String toSpeak = "Attention un obstacle se trouve à une distance inférieure à 1 mètre";
+                                    tts.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
+                                }
+                                public Runnable init(String Message,int nbrend){
+                                    end=nbrend;
+                                    writeMessage=Message.substring(1,end);
+                                    return this;
+                                }
+                            }.init(writeMessage,end));
+                            thread.start();
+                        }
                     }
                     else {
                         if (writeMessage.startsWith(">")) {
@@ -197,6 +226,24 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("Device", writeMessage);
                             Log.d("Device", String.valueOf((int) msg.arg1));
                             Distance.setText(writeMessage);
+                            if (!tts.isSpeaking() && TIMEOUT>=4000) {
+                                Thread thread = new Thread(new Runnable() {
+                                    String writeMessage;
+                                    @Override
+                                    public void run() {
+                                        date = new Date();
+                                        StartDate = date.getTime();
+                                        //Log.d("Device",String.valueOf(StartDate));
+                                        String toSpeak = "Attention un obstacle se trouve à une distance inférieure à 1 mètre";
+                                        tts.speak(toSpeak, TextToSpeech.QUEUE_FLUSH, null, null);
+                                    }
+                                    public Runnable init(String Message) {
+                                        writeMessage = Message;
+                                        return this;
+                                    }
+                                }.init(writeMessage));
+                                thread.start();
+                            }
                         }
                     }
                     break;
@@ -209,6 +256,16 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Bluetooth = BluetoothAdapter.getDefaultAdapter();
+        tts=new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status != TextToSpeech.ERROR) {
+                    tts.setLanguage(Locale.FRENCH);
+                    tts.speak("Bonjour Je suis votre Assistant de Navigation",TextToSpeech.QUEUE_FLUSH,null,null);
+                }
+            }
+        });
+
         /*
         if (Bluetooth==null){
             // Device doesn't support Bluetooth
@@ -234,5 +291,13 @@ public class MainActivity extends AppCompatActivity {
         ConnectThread HC06_Connect = new ConnectThread(HC06);
         HC06_Connect.start();
 
+    }
+
+    public void onPause(){
+        if (tts!=null){
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onPause();
     }
 }
