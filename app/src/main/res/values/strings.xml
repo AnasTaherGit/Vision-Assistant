@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">Vision Assistant</string>
-    <string name="titre">Visualy Impaired Persons Assistance</string>
+    <string name="titre">Visually Impaired People Assistance</string>
     <string name="msg">Distance from Obstacle</string>
     <string name="Dist">No obstacles</string>
     <string name="SenderText">TEST</string>
